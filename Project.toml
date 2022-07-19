@@ -1,7 +1,10 @@
-name = "SphericalHarmonics"
+name = "SphericalConvolutions"
 uuid = "7186af5b-8736-480f-81ff-8eb527665490"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de> and contributors"]
 version = "0.1.0"
+
+[deps]
+FastTransforms = "057dd010-8810-581a-b7be-e3fc3b93f78c"
 
 [compat]
 julia = "1.6"

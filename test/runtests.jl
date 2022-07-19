@@ -1,6 +1,6 @@
-using SphericalHarmonics
+using SphericalConvolutions
 using Test
 
-@testset "SphericalHarmonics.jl" begin
+@testset "SphericalConvolutions.jl" begin
     # Write your tests here.
 end
