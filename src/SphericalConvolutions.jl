@@ -22,7 +22,7 @@ function Base.setindex!(a::PLM,v,l,m)
 end
 lmax(c::PLM)=size(c.coefs,1)-1
 mmax(c::PLM,l)=min(size(c.coefs,2)÷2,l)
-export lmmax,mmax
+export lmax,mmax
 
 
 struct PlanAll{T,A,S,P}
@@ -84,7 +84,7 @@ function imageExpSpectrum(;beta=20,nlat=720,nlon=1439)
 end
 function imagePowerSpectrum(;beta=1.5,nlat=720,nlon=1439)
   c=PLM(zeros(nlat,nlon))
-  for l=1:719,m=-l:l
+  for l=1:(nlat-1),m=-l:l
     c[l,m]=randn()/l^(beta)/sqrt(2*l+1)
   end
   im = do_back_transform(c)
@@ -146,6 +146,19 @@ function gausswavelet(im;r=1e6:2e6:9e6)
   gausswavelet!(imback,im,wp)
 end
 
+
+function lowpass(im;lbord = 10, width = lbord/20)
+  clm = do_transform(im)
+  nlat = size(im,1)
+  scalef(l) = tanh((lbord-l)/width)/2.0+0.5
+  for il=1:(nlat-1)
+    sc = scalef(il)
+    for m=-il:il
+      clm[il,m]=clm[il,m]*sc
+    end
+  end
+  do_back_transform(clm)
+end
 export WaveletPlan, gausswavelet, gausswavelet!
 
 end

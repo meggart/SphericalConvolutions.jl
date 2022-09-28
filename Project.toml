@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 FastTransforms = "057dd010-8810-581a-b7be-e3fc3b93f78c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
 julia = "1.6"
