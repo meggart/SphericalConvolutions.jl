@@ -98,8 +98,8 @@ struct WaveletPlan{T,P,ET}
   cmapped::Vector{PLM{ET}}
   cbuf::PLM{ET}
 end
-function WaveletPlan(im;r=1e6:2e6:9e6)
-  plan,c = generatekernels(nlat=size(im,1),nlon=size(im,2),r=r)
+function WaveletPlan(im;r=1e6:2e6:9e6,kernelfunc = x->exp(-x^2))
+  plan,c = generatekernels(nlat=size(im,1),nlon=size(im,2),r=r,kernelfunc=kernelfunc)
   cmapped = [PLM(zeros(size(im))) for i=1:length(r)]
   cbuf = PLM(zeros(size(im)))
   WaveletPlan(r,c,plan,cmapped,cbuf)
@@ -108,12 +108,12 @@ end
 i2lon(i,nlon)=(i-0.5)*(360/nlon)-180
 i2lat(i,nlat)=90-(i-0.5)*(180/nlat)
 poledist(lat) = (90-lat)*40000/360
-function makespot(nlat,nlon;clat=0.0,clon=0.0,r=1e6)
-  o = [exp(-(poledist(i2lat(j,nlat))/r)^2) for j=1:nlat,i=1:nlon]
+function makespot(nlat,nlon;r=1e6,kernelfunc = x->exp(-x^2))
+  o = [kernelfunc(poledist(i2lat(j,nlat))/r) for j=1:nlat,_=1:nlon]
   o/sum(abs2,o)
 end
-function generatekernels(;nlat=720,nlon=1440,r=2e6:2e6:10e6)
-  kernelims = map(ir->makespot(nlat,nlon,clon=0.0,clat=90.0,r=ir),r)
+function generatekernels(;nlat=721,nlon=1441,r=2e3:2e3:10e3, kernelfunc = x->exp(-x^2))
+  kernelims = map(ir->makespot(nlat,nlon,r=ir;kernelfunc),r)
   plan = PlanAll(zeros(nlat,nlon))
   coefs = [PLM(zeros(nlat,nlon)) for i=1:length(r)]
   map(kernelims,coefs) do k,c
@@ -126,7 +126,7 @@ function generatekernels(;nlat=720,nlon=1440,r=2e6:2e6:10e6)
   end
   plan,coefs
 end
-function gausswavelet!(imback::Vector,im::Matrix,wp::WaveletPlan)
+function wavelet!(imback::Vector,im::Matrix,wp::WaveletPlan)
   #Transform input image
   fill!(wp.cbuf.coefs,0.0)
   do_transform!(wp.cbuf,im,wp.plan)
@@ -146,11 +146,12 @@ function gausswavelet(im;r=1e6:2e6:9e6)
   gausswavelet!(imback,im,wp)
 end
 
+lowpasskernel(;lbord = 10, width = lbord/20) = l-> tanh((lbord-l)/width)/2.0+0.5
 
-function lowpass(im;lbord = 10, width = lbord/20)
+
+function lowpass(im;lbord = 10, width = lbord/20, scalef = lowpasskernel(;lbord,width))
   clm = do_transform(im)
   nlat = size(im,1)
-  scalef(l) = tanh((lbord-l)/width)/2.0+0.5
   for il=1:(nlat-1)
     sc = scalef(il)
     for m=-il:il
@@ -159,7 +160,16 @@ function lowpass(im;lbord = 10, width = lbord/20)
   end
   do_back_transform(clm)
 end
-export WaveletPlan, gausswavelet, gausswavelet!
+export WaveletPlan, gausswavelet, gausswavelet!, lowpass
+
+function sphericalspectrum(im)
+  coefs = do_transform(im)
+  map(1:lmax(coefs)) do l
+      mm = mmax(coefs,l)
+      sum(m->abs2(coefs[l,m]),-mm:mm)
+  end
+end
+export sphericalspectrum
 
 end
 
